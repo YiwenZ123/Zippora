@@ -1,0 +1,24 @@
+:root {
+  --bg-primary: #1E1E1E;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2D2D2D;
+  --bg-sidebar: #181818;
+  --bg-hover: #2A2D2E;
+  --bg-active: #37373D;
+  --text-primary: #CCCCCC;
+  --text-secondary: #858585;
+  --text-muted: #5A5A5A;
+  --accent: #007ACC;
+  --accent-hover: #1A8AD4;
+  --border: #3C3C3C;
+  --success: #4EC9B0;
+  --error: #F44747;
+  --warning: #CE9178;
+  --scrollbar-thumb: #424242;
+  --scrollbar-track: #1E1E1E;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}

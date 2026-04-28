@@ -1,0 +1,13 @@
+{
+  "name": "latex-editor-ai",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:server\"",
+    "dev:frontend": "cd src && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "install:all": "cd src && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
