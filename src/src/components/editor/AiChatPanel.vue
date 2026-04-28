@@ -257,28 +257,39 @@ watch(() => settingsStore.aiModel, (model) => {
 
 <style scoped>
 .ai-chat-panel {
-  width: 340px;
-  background: var(--bg-sidebar);
-  border-left: 1px solid var(--border);
+  position: absolute;
+  z-index: 35;
+  right: min(32vw, 420px);
+  top: 54px;
+  bottom: 78px;
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  background: rgba(24, 24, 24, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px);
+  overflow: hidden;
 }
 
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  min-height: 42px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(31, 31, 31, 0.96);
 }
 
 .chat-title {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .chat-title-wrap,
@@ -290,9 +301,10 @@ watch(() => settingsStore.aiModel, (model) => {
 
 .key-status {
   font-size: 11px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 700;
 }
 
 .key-status.ready {
@@ -311,17 +323,17 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .icon-btn:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
 .api-settings {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .api-settings label {
@@ -340,6 +352,9 @@ watch(() => settingsStore.aiModel, (model) => {
   height: 32px;
   padding: 6px 8px;
   font-size: 12px;
+  background: #101010;
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .api-key-row .settings-input {
@@ -356,8 +371,8 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .settings-btn.primary {
-  background: var(--accent);
-  color: white;
+  background: #f2f2f2;
+  color: #111;
 }
 
 .settings-btn.secondary {
@@ -372,13 +387,13 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .settings-btn.primary:hover {
-  background: var(--accent-hover);
+  background: #fff;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -405,9 +420,9 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .message-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -417,13 +432,13 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .chat-message.user .message-avatar {
-  background: var(--accent);
-  color: white;
+  background: #f2f2f2;
+  color: #111;
 }
 
 .chat-message.assistant .message-avatar {
-  background: var(--success);
-  color: #1E1E1E;
+  background: #d5f7db;
+  color: #15161a;
 }
 
 .message-content {
@@ -438,16 +453,17 @@ watch(() => settingsStore.aiModel, (model) => {
 }
 
 .chat-message.user .message-text {
-  background: var(--accent);
-  color: white;
+  background: #f2f2f2;
+  color: #111;
   padding: 8px 12px;
-  border-radius: 12px 12px 2px 12px;
+  border-radius: var(--radius-lg) var(--radius-lg) 2px var(--radius-lg);
 }
 
 .chat-message.assistant .message-text {
-  background: var(--bg-tertiary);
+  background: #222;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 8px 12px;
-  border-radius: 12px 12px 12px 2px;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 2px;
 }
 
 .typing-indicator {
@@ -476,8 +492,9 @@ watch(() => settingsStore.aiModel, (model) => {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(31, 31, 31, 0.96);
 }
 
 .chat-input-area textarea {
@@ -488,6 +505,9 @@ watch(() => settingsStore.aiModel, (model) => {
   padding: 8px 10px;
   font-size: 13px;
   line-height: 1.4;
+  background: #101010;
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .send-btn {
@@ -497,17 +517,25 @@ watch(() => settingsStore.aiModel, (model) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
-  color: white;
+  background: #f2f2f2;
+  color: #111;
   flex-shrink: 0;
 }
 
 .send-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #fff;
 }
 
 .send-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (max-width: 1080px) {
+  .ai-chat-panel {
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
 }
 </style>

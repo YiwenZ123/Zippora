@@ -70,6 +70,15 @@ export const useProjectStore = defineStore('project', () => {
     removeProject(id)
   }
 
+  function renameProject(id: string, name: string) {
+    const project = getProject(id)
+    const trimmed = name.trim()
+    if (!project || !trimmed) return
+    project.name = trimmed
+    project.icon = trimmed.charAt(0).toUpperCase()
+    updateProject(project)
+  }
+
   function updateProject(project: Project) {
     project.updatedAt = Date.now()
     saveProject(project)
@@ -93,6 +102,37 @@ export const useProjectStore = defineStore('project', () => {
       }
     }
     return null
+  }
+
+  function findFilePath(files: VirtualFile[], fileId: string, prefix = ''): string | null {
+    for (const f of files) {
+      const path = prefix ? `${prefix}/${f.name}` : f.name
+      if (f.id === fileId) return path
+      if (f.children) {
+        const found = findFilePath(f.children, fileId, path)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  function renameFile(project: Project, fileId: string, name: string) {
+    const file = findFile(project.files, fileId)
+    const trimmed = name.trim()
+    if (!file || !trimmed || trimmed.includes('/') || trimmed.includes('\\')) return null
+
+    const oldPath = findFilePath(project.files, fileId)
+    file.name = trimmed
+    const newPath = findFilePath(project.files, fileId)
+    if (oldPath && newPath) {
+      if (project.mainFile === oldPath) {
+        project.mainFile = newPath
+      } else if (file.type === 'folder' && project.mainFile.startsWith(`${oldPath}/`)) {
+        project.mainFile = `${newPath}/${project.mainFile.slice(oldPath.length + 1)}`
+      }
+    }
+    updateProject(project)
+    return file
   }
 
   function addFile(project: Project, parentId: string | null, name: string, type: 'file' | 'folder') {
@@ -158,9 +198,12 @@ export const useProjectStore = defineStore('project', () => {
     createProjectFromFiles,
     getProject,
     deleteProjectById,
+    renameProject,
     updateProject,
     updateFileContent,
     findFile,
+    findFilePath,
+    renameFile,
     addFile,
     deleteFile,
     flattenFiles

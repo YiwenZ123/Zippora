@@ -14,6 +14,11 @@ export const useEditorStore = defineStore('editor', () => {
     activeLine.value = line
   }
 
+  function renameTab(fileId: string, fileName: string) {
+    const tab = openTabs.value.find(t => t.fileId === fileId)
+    if (tab) tab.fileName = fileName
+  }
+
   function closeTab(fileId: string) {
     openTabs.value = openTabs.value.filter(t => t.fileId !== fileId)
     if (activeTabId.value === fileId) {
@@ -31,6 +36,7 @@ export const useEditorStore = defineStore('editor', () => {
     activeTabId,
     activeLine,
     openFile,
+    renameTab,
     closeTab,
     closeAllTabs
   }

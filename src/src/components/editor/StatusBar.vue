@@ -49,8 +49,8 @@ const connected = ref(true)
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  height: 26px;
-  background: var(--bg-sidebar);
+  height: 30px;
+  background: #101216;
   border-top: 1px solid var(--border);
   font-size: 11px;
   flex-shrink: 0;
@@ -66,14 +66,15 @@ const connected = ref(true)
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  height: 22px;
+  padding: 0 8px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 11px;
 }
 
 .status-btn:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--text-primary);
 }
 
@@ -86,6 +87,10 @@ const connected = ref(true)
   align-items: center;
   gap: 4px;
   color: var(--text-secondary);
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .dot {

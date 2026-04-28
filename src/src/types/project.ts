@@ -21,3 +21,4 @@ export interface Project {
 }
 
 export type ProjectFilter = 'all' | 'yours' | 'shared'
+export type DashboardViewMode = 'list' | 'grid'

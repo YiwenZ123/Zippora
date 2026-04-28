@@ -10,11 +10,12 @@ html, body, #app {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--bg-studio);
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::-webkit-scrollbar {
@@ -32,7 +33,7 @@ html, body, #app {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #636b76;
 }
 
 a {
@@ -47,21 +48,32 @@ button {
   border: none;
   background: none;
   color: var(--text-primary);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 input, textarea {
   font-family: inherit;
   font-size: inherit;
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  color: inherit;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   outline: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 input:focus, textarea:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 ::selection {
