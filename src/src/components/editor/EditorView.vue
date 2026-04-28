@@ -5,6 +5,7 @@ import { useProjectStore } from '../../stores/project'
 import { useEditorStore } from '../../stores/editor'
 import { useSettingsStore } from '../../stores/settings'
 import { useAiChatStore } from '../../stores/ai-chat'
+import type { VirtualFile } from '../../types/project'
 import FileExplorer from './FileExplorer.vue'
 import CodeEditor from './CodeEditor.vue'
 import PdfPreview from './PdfPreview.vue'
@@ -26,6 +27,7 @@ const showPdf = ref(true)
 const compileError = ref<string | null>(null)
 const pdfData = ref<ArrayBuffer | null>(null)
 const isCompiling = ref(false)
+const codeEditorRef = ref<InstanceType<typeof CodeEditor> | null>(null)
 
 // Resizable panels
 const explorerWidth = ref(220)
@@ -58,9 +60,26 @@ function toggleAi() {
   settingsStore.aiPanelVisible = !settingsStore.aiPanelVisible
 }
 
+function compileProject() {
+  codeEditorRef.value?.compileLatex()
+}
+
+function findFileByPath(files: VirtualFile[], targetPath: string, prefix = ''): VirtualFile | null {
+  for (const file of files) {
+    const path = prefix ? `${prefix}/${file.name}` : file.name
+    if (file.type === 'file' && path === targetPath) return file
+    if (file.children) {
+      const found = findFileByPath(file.children, targetPath, path)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 onMounted(() => {
   if (project.value) {
-    const mainFile = project.value.files.find(f => f.name === 'main.tex')
+    const mainFile = findFileByPath(project.value.files, project.value.mainFile)
+      ?? project.value.files.find(f => f.name === 'main.tex')
     if (mainFile) {
       editorStore.openFile(mainFile.id, mainFile.name)
     }
@@ -109,6 +128,7 @@ function goBack() {
 
       <div class="editor-content">
         <CodeEditor
+          ref="codeEditorRef"
           :project="project"
           @compile="(data, err) => handleCompileResult(data, err)"
           @compiling="isCompiling = true"
@@ -120,6 +140,7 @@ function goBack() {
         :pdf-data="pdfData"
         :error="compileError"
         :is-compiling="isCompiling"
+        @compile="compileProject"
       />
 
       <AiChatPanel

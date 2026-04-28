@@ -4,6 +4,7 @@ export interface VirtualFile {
   type: 'file' | 'folder'
   parentId: string | null
   content: string
+  encoding?: 'utf8' | 'base64'
   children?: VirtualFile[]
 }
 

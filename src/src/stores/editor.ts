@@ -4,12 +4,14 @@ import { ref } from 'vue'
 export const useEditorStore = defineStore('editor', () => {
   const openTabs = ref<{ fileId: string; fileName: string }[]>([])
   const activeTabId = ref<string | null>(null)
+  const activeLine = ref<number | undefined>()
 
-  function openFile(fileId: string, fileName: string) {
+  function openFile(fileId: string, fileName: string, line?: number) {
     if (!openTabs.value.find(t => t.fileId === fileId)) {
       openTabs.value.push({ fileId, fileName })
     }
     activeTabId.value = fileId
+    activeLine.value = line
   }
 
   function closeTab(fileId: string) {
@@ -27,6 +29,7 @@ export const useEditorStore = defineStore('editor', () => {
   return {
     openTabs,
     activeTabId,
+    activeLine,
     openFile,
     closeTab,
     closeAllTabs

@@ -1,16 +1,41 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useProjectStore } from '../../stores/project'
+import { readImportedProject } from '../../utils/import-project'
 
 const emit = defineEmits<{
   newProject: []
 }>()
 
 const store = useProjectStore()
+const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
+const isImporting = ref(false)
 
 function openFilePicker() {
   fileInput.value?.click()
+}
+
+async function handleImport(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || isImporting.value) return
+
+  isImporting.value = true
+  try {
+    const imported = await readImportedProject(file)
+    const project = store.createProjectFromFiles(imported.name, imported.files, imported.mainFile)
+    if (imported.skippedFiles.length > 0) {
+      alert(`已导入项目。以下非文本文件暂未导入：${imported.skippedFiles.slice(0, 5).join(', ')}${imported.skippedFiles.length > 5 ? '...' : ''}`)
+    }
+    await router.push({ name: 'editor', params: { id: project.id } })
+  } catch (error: any) {
+    alert(error?.message || '导入失败，请检查文件格式。')
+  } finally {
+    isImporting.value = false
+    input.value = ''
+  }
 }
 </script>
 
@@ -45,14 +70,14 @@ function openFilePicker() {
         </button>
       </div>
 
-      <button class="toolbar-btn" @click="openFilePicker">
+      <button class="toolbar-btn" @click="openFilePicker" :disabled="isImporting">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        导入
-        <input ref="fileInput" type="file" accept=".tex,.zip" style="display:none" @change="(e: Event) => {}" />
+        {{ isImporting ? '导入中' : '导入' }}
+        <input ref="fileInput" type="file" accept=".tex,.zip" style="display:none" @change="handleImport" />
       </button>
 
       <button class="toolbar-btn primary" @click="emit('newProject')">
@@ -150,6 +175,11 @@ function openFilePicker() {
 
 .toolbar-btn:hover {
   background: var(--bg-hover);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .toolbar-btn.primary {

@@ -38,6 +38,8 @@ const activeFile = computed(() => {
   return projectStore.findFile(props.project.files, editorStore.activeTabId)
 })
 
+const editorLine = computed(() => editorStore.activeLine)
+
 // Local content to avoid computed-setter re-render loop with Monaco
 const localContent = ref('')
 
@@ -94,6 +96,8 @@ async function compileLatex() {
     emit('compile', null, e.message || '无法连接编译服务器')
   }
 }
+
+defineExpose({ compileLatex })
 
 function handleSave() {
   projectStore.updateProject(props.project)
@@ -155,6 +159,8 @@ onUnmounted(() => {
         v-model:value="localContent"
         language="latex"
         theme="vs-dark"
+        :path="editorStore.activeTabId"
+        :line="editorLine"
         :options="editorOptions"
         @change="handleInput"
         style="height: 100%"

@@ -8,13 +8,22 @@ import { tmpdir } from 'os'
 
 const app = express()
 app.use(cors())
-app.use(express.json({ limit: '5mb' }))
+app.use(express.json({ limit: '50mb' }))
 
 const PDFTIMEOUT = 30000
+const DEFAULT_AI_API_BASE_URL = 'https://api.openai.com/v1'
+const DEFAULT_AI_MODEL = 'gpt-4o-mini'
 
 interface CompileRequest {
-  files: { path: string; content: string }[]
+  files: { path: string; content: string; encoding?: 'utf8' | 'base64' }[]
   mainFile: string
+}
+
+interface AiChatRequest {
+  messages: { role: string; content: string }[]
+  apiKey: string
+  apiBaseUrl?: string
+  model?: string
 }
 
 // Validate file path - no traversal, no absolute paths
@@ -23,6 +32,20 @@ function isSafePath(filePath: string): boolean {
   if (filePath.includes('..')) return false
   if (filePath.startsWith('.')) return false
   return true
+}
+
+function buildChatCompletionsUrl(baseUrl: string | undefined): string {
+  const rawBaseUrl = (baseUrl || DEFAULT_AI_API_BASE_URL).trim()
+  const parsed = new URL(rawBaseUrl)
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('API Base URL must use http or https')
+  }
+
+  const normalized = parsed.toString().replace(/\/+$/, '')
+  if (normalized.endsWith('/chat/completions')) {
+    return normalized
+  }
+  return `${normalized}/chat/completions`
 }
 
 // POST /compile - compile LaTeX to PDF
@@ -57,7 +80,10 @@ app.post('/compile', async (req, res) => {
       const filePath = join(workDir, f.path)
       const dir = join(filePath, '..')
       await mkdir(dir, { recursive: true })
-      await writeFile(filePath, f.content, 'utf-8')
+      const content = f.encoding === 'base64'
+        ? Buffer.from(f.content, 'base64')
+        : f.content
+      await writeFile(filePath, content, f.encoding === 'base64' ? undefined : 'utf-8')
     }
 
     // Run pdflatex
@@ -118,24 +144,30 @@ app.get('/health', async (_req, res) => {
   }
 })
 
-// POST /ai-chat - proxy OpenAI API requests
+// POST /ai-chat - proxy OpenAI-compatible API requests
 app.post('/ai-chat', async (req, res) => {
-  const { messages, apiKey } = req.body
+  const { messages, apiKey, apiBaseUrl, model } = req.body as AiChatRequest
 
   if (!apiKey) {
-    res.status(400).json({ error: '请先在设置中配置 OpenAI API Key' })
+    res.status(400).json({ error: '请先在设置中配置 AI API Key' })
+    return
+  }
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    res.status(400).json({ error: 'No messages provided' })
     return
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const chatCompletionsUrl = buildChatCompletionsUrl(apiBaseUrl)
+    const response = await fetch(chatCompletionsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: model?.trim() || DEFAULT_AI_MODEL,
         messages,
         stream: true
       })

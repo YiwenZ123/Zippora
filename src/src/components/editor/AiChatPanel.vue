@@ -9,7 +9,17 @@ const aiChatStore = useAiChatStore()
 const settingsStore = useSettingsStore()
 
 const inputMessage = ref('')
+const apiKeyDraft = ref(settingsStore.openaiApiKey)
+const apiBaseUrlDraft = ref(settingsStore.aiApiBaseUrl)
+const modelDraft = ref(settingsStore.aiModel)
+const showSettings = ref(!settingsStore.openaiApiKey)
 const messagesContainer = ref<HTMLDivElement | null>(null)
+
+const isAiConfigured = computed(() =>
+  settingsStore.openaiApiKey.trim().length > 0 &&
+  settingsStore.aiApiBaseUrl.trim().length > 0 &&
+  settingsStore.aiModel.trim().length > 0
+)
 
 const systemPrompt = computed(() => {
   const activeFile = 'main.tex'
@@ -21,6 +31,14 @@ const systemPrompt = computed(() => {
 async function sendMessage() {
   const msg = inputMessage.value.trim()
   if (!msg || aiChatStore.isStreaming) return
+
+  if (!isAiConfigured.value) {
+    showSettings.value = true
+    aiChatStore.addMessage('assistant', '请先配置 AI 接口。')
+    await nextTick()
+    scrollToBottom()
+    return
+  }
 
   inputMessage.value = ''
   aiChatStore.addMessage('user', msg)
@@ -35,7 +53,9 @@ async function sendMessage() {
           { role: 'system', content: systemPrompt.value },
           ...aiChatStore.messages.map(m => ({ role: m.role, content: m.content }))
         ],
-        apiKey: settingsStore.openaiApiKey
+        apiKey: settingsStore.openaiApiKey,
+        apiBaseUrl: settingsStore.aiApiBaseUrl,
+        model: settingsStore.aiModel
       })
     })
 
@@ -90,6 +110,25 @@ async function sendMessage() {
   scrollToBottom()
 }
 
+function saveApiKey() {
+  settingsStore.setAiConnection({
+    apiKey: apiKeyDraft.value.trim(),
+    apiBaseUrl: apiBaseUrlDraft.value.trim(),
+    model: modelDraft.value.trim()
+  })
+  showSettings.value = !isAiConfigured.value
+}
+
+function clearApiKey() {
+  apiKeyDraft.value = ''
+  settingsStore.setAiConnection({
+    apiKey: '',
+    apiBaseUrl: apiBaseUrlDraft.value.trim(),
+    model: modelDraft.value.trim()
+  })
+  showSettings.value = true
+}
+
 function scrollToBottom() {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
@@ -99,19 +138,80 @@ function scrollToBottom() {
 watch(() => aiChatStore.messages.length, () => {
   nextTick(scrollToBottom)
 })
+
+watch(() => settingsStore.openaiApiKey, (key) => {
+  apiKeyDraft.value = key
+})
+
+watch(() => settingsStore.aiApiBaseUrl, (url) => {
+  apiBaseUrlDraft.value = url
+})
+
+watch(() => settingsStore.aiModel, (model) => {
+  modelDraft.value = model
+})
 </script>
 
 <template>
   <div class="ai-chat-panel">
     <div class="chat-header">
-      <span class="chat-title">AI 助手</span>
-      <button class="icon-btn" @click="aiChatStore.clearChat()" title="清空对话">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-      </button>
+      <div class="chat-title-wrap">
+        <span class="chat-title">AI 助手</span>
+        <span :class="['key-status', isAiConfigured ? 'ready' : 'missing']">
+          {{ isAiConfigured ? '已配置' : '未配置' }}
+        </span>
+      </div>
+      <div class="chat-header-actions">
+        <button class="icon-btn" @click="showSettings = !showSettings" title="OpenAI API Key">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-3-3L12 5l4 4-4.6 2.6z"/>
+            <path d="M15 5l4 4"/>
+          </svg>
+        </button>
+        <button class="icon-btn" @click="aiChatStore.clearChat()" title="清空对话">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
     </div>
+
+    <form v-if="showSettings || !isAiConfigured" class="api-settings" @submit.prevent="saveApiKey">
+      <label for="ai-api-base-url">API Base URL</label>
+      <input
+        id="ai-api-base-url"
+        v-model="apiBaseUrlDraft"
+        class="settings-input"
+        autocomplete="off"
+        placeholder="https://api.openai.com/v1"
+      />
+
+      <label for="ai-model">模型</label>
+      <input
+        id="ai-model"
+        v-model="modelDraft"
+        class="settings-input"
+        autocomplete="off"
+        placeholder="gpt-4o-mini"
+      />
+
+      <label for="openai-api-key">API Key</label>
+      <div class="api-key-row">
+        <input
+          id="openai-api-key"
+          v-model="apiKeyDraft"
+          class="settings-input"
+          type="password"
+          autocomplete="off"
+          placeholder="sk-..."
+        />
+        <button type="submit" class="settings-btn primary">保存</button>
+      </div>
+      <button v-if="settingsStore.openaiApiKey" type="button" class="settings-btn secondary" @click="clearApiKey">
+        清除当前 Key
+      </button>
+    </form>
 
     <div class="chat-messages" ref="messagesContainer">
       <div v-if="aiChatStore.messages.length === 0" class="chat-empty">
@@ -181,6 +281,28 @@ watch(() => aiChatStore.messages.length, () => {
   color: var(--text-secondary);
 }
 
+.chat-title-wrap,
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.key-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.key-status.ready {
+  color: var(--success);
+}
+
+.key-status.missing {
+  color: var(--warning);
+}
+
 .icon-btn {
   padding: 4px;
   border-radius: var(--radius-sm);
@@ -191,6 +313,66 @@ watch(() => aiChatStore.messages.length, () => {
 .icon-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.api-settings {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary);
+}
+
+.api-settings label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.api-key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.api-key-row .settings-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.settings-btn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.settings-btn.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.settings-btn.secondary {
+  align-self: flex-start;
+  height: 26px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.settings-btn:hover {
+  background: var(--bg-hover);
+}
+
+.settings-btn.primary:hover {
+  background: var(--accent-hover);
 }
 
 .chat-messages {

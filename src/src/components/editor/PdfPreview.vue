@@ -7,6 +7,10 @@ const props = defineProps<{
   isCompiling: boolean
 }>()
 
+const emit = defineEmits<{
+  compile: []
+}>()
+
 const containerRef = ref<HTMLDivElement | null>(null)
 const scale = ref(1.2)
 const totalPages = ref(0)
@@ -119,6 +123,16 @@ onUnmounted(() => {
     <div class="pdf-toolbar">
       <span class="pdf-title">PDF 预览</span>
       <div class="pdf-controls">
+        <button class="compile-btn" @click="emit('compile')" :disabled="isCompiling" title="编译 LaTeX">
+          <svg v-if="!isCompiling" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 0 1-9 9"/>
+            <path d="M3 12a9 9 0 0 1 9-9"/>
+            <path d="M21 3v6h-6"/>
+            <path d="M3 21v-6h6"/>
+          </svg>
+          <span v-else class="mini-spinner"></span>
+          <span>{{ isCompiling ? '编译中' : '编译' }}</span>
+        </button>
         <button @click="scale = Math.max(0.5, scale - 0.2)" title="缩小">-</button>
         <span class="zoom-level">{{ Math.round(scale * 100) }}%</span>
         <button @click="scale = Math.min(3, scale + 0.2)" title="放大">+</button>
@@ -207,6 +221,30 @@ onUnmounted(() => {
 
 .pdf-controls button:hover {
   background: var(--bg-hover);
+}
+
+.pdf-controls button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pdf-controls .compile-btn {
+  width: auto;
+  min-width: 64px;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.mini-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .zoom-level {

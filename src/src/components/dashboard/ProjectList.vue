@@ -29,6 +29,8 @@ function handleContextMenu(e: MouseEvent, projectId: string) {
 }
 
 function deleteProject(id: string) {
+  const project = store.projects.find(item => item.id === id)
+  if (!confirm(`确定删除项目「${project?.name ?? '未命名项目'}」吗？此操作不可恢复。`)) return
   store.deleteProjectById(id)
   contextMenuProject.value = null
 }
@@ -118,8 +120,13 @@ function deleteProject(id: string) {
 }
 
 .col-actions {
-  width: 60px;
+  width: 84px;
   text-align: right;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .project-row {
@@ -129,6 +136,7 @@ function deleteProject(id: string) {
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.15s;
+  position: relative;
 }
 
 .project-row:hover {
@@ -214,6 +222,6 @@ function deleteProject(id: string) {
 .context-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 10;
 }
 </style>

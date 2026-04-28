@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Project, VirtualFile } from '../../types/project'
 import { useProjectStore } from '../../stores/project'
 import { useEditorStore } from '../../stores/editor'
@@ -10,6 +10,50 @@ const editorStore = useEditorStore()
 
 const expandedFolders = ref<Set<string>>(new Set())
 const contextMenu = ref<{ fileId: string; x: number; y: number } | null>(null)
+
+interface OutlineItem {
+  title: string
+  line: number
+  level: number
+  command: string
+}
+
+const outlineSourceFile = computed(() => {
+  if (editorStore.activeTabId) {
+    const activeFile = projectStore.findFile(props.project.files, editorStore.activeTabId)
+    if (activeFile?.type === 'file' && activeFile.name.toLowerCase().endsWith('.tex')) {
+      return activeFile
+    }
+  }
+  return findFileByPath(props.project.files, props.project.mainFile)
+    ?? findFirstTexFile(props.project.files)
+})
+
+const outlineItems = computed(() => {
+  if (!outlineSourceFile.value) return []
+
+  const items: OutlineItem[] = []
+  const levelByCommand: Record<string, number> = {
+    part: 0,
+    chapter: 1,
+    section: 2,
+    subsection: 3,
+    subsubsection: 4
+  }
+
+  outlineSourceFile.value.content.split('\n').forEach((line, index) => {
+    const match = line.match(/\\(part|chapter|section|subsection|subsubsection)\*?(?:\[[^\]]*])?\{([^{}]+)\}/)
+    if (!match) return
+    items.push({
+      command: match[1],
+      title: match[2].trim(),
+      line: index + 1,
+      level: levelByCommand[match[1]] ?? 0
+    })
+  })
+
+  return items
+})
 
 function toggleFolder(fileId: string) {
   if (expandedFolders.value.has(fileId)) {
@@ -46,6 +90,34 @@ function addNewFile(parentId: string | null, type: 'file' | 'folder') {
 function deleteFile(fileId: string) {
   projectStore.deleteFile(props.project, fileId)
   closeContextMenu()
+}
+
+function openOutlineItem(item: OutlineItem) {
+  if (!outlineSourceFile.value) return
+  editorStore.openFile(outlineSourceFile.value.id, outlineSourceFile.value.name, item.line)
+}
+
+function findFileByPath(files: VirtualFile[], targetPath: string, prefix = ''): VirtualFile | null {
+  for (const file of files) {
+    const path = prefix ? `${prefix}/${file.name}` : file.name
+    if (file.type === 'file' && path === targetPath) return file
+    if (file.children) {
+      const found = findFileByPath(file.children, targetPath, path)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+function findFirstTexFile(files: VirtualFile[]): VirtualFile | null {
+  for (const file of files) {
+    if (file.type === 'file' && file.name.toLowerCase().endsWith('.tex')) return file
+    if (file.children) {
+      const found = findFirstTexFile(file.children)
+      if (found) return found
+    }
+  }
+  return null
 }
 </script>
 
@@ -109,6 +181,27 @@ function deleteFile(fileId: string) {
       </template>
     </div>
 
+    <div class="outline-panel">
+      <div class="outline-header">
+        <span>大纲</span>
+        <span v-if="outlineSourceFile" class="outline-source">{{ outlineSourceFile.name }}</span>
+      </div>
+      <div v-if="outlineItems.length > 0" class="outline-list">
+        <button
+          v-for="item in outlineItems"
+          :key="`${item.line}-${item.title}`"
+          class="outline-item"
+          :style="{ paddingLeft: `${12 + item.level * 10}px` }"
+          :title="`${item.command} · 第 ${item.line} 行`"
+          @click.stop="openOutlineItem(item)"
+        >
+          <span class="outline-title">{{ item.title }}</span>
+          <span class="outline-line">{{ item.line }}</span>
+        </button>
+      </div>
+      <div v-else class="outline-empty">暂无章节</div>
+    </div>
+
     <!-- Context menu -->
     <div
       v-if="contextMenu"
@@ -162,7 +255,8 @@ function deleteFile(fileId: string) {
 }
 
 .file-tree {
-  flex: 1;
+  flex: 1 1 55%;
+  min-height: 120px;
   overflow-y: auto;
   padding: 4px 0;
 }
@@ -220,5 +314,82 @@ function deleteFile(fileId: string) {
 
 .context-menu button.danger:hover {
   background: rgba(244, 71, 71, 0.1);
+}
+
+.outline-panel {
+  flex: 1 1 45%;
+  min-height: 140px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.outline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.outline-source {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.outline-list {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.outline-item {
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: left;
+}
+
+.outline-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.outline-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-line {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.outline-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 </style>

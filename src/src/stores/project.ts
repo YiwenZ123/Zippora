@@ -44,6 +44,23 @@ export const useProjectStore = defineStore('project', () => {
     return project
   }
 
+  function createProjectFromFiles(name: string, files: VirtualFile[], mainFile: string): Project {
+    const project: Project = {
+      id: generateId(),
+      name,
+      icon: name.charAt(0).toUpperCase(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      files,
+      mainFile,
+      compileStatus: 'idle',
+      lastCompileError: null
+    }
+    projects.value.push(project)
+    saveProject(project)
+    return project
+  }
+
   function getProject(id: string): Project | undefined {
     return projects.value.find(p => p.id === id)
   }
@@ -62,6 +79,7 @@ export const useProjectStore = defineStore('project', () => {
     const file = findFile(project.files, fileId)
     if (file) {
       file.content = content
+      file.encoding = 'utf8'
       updateProject(project)
     }
   }
@@ -84,6 +102,7 @@ export const useProjectStore = defineStore('project', () => {
       type,
       parentId,
       content: type === 'file' ? '' : '',
+      encoding: 'utf8',
       children: type === 'folder' ? [] : undefined
     }
     if (parentId) {
@@ -115,12 +134,12 @@ export const useProjectStore = defineStore('project', () => {
     updateProject(project)
   }
 
-  function flattenFiles(files: VirtualFile[], prefix = ''): { path: string; content: string }[] {
-    const result: { path: string; content: string }[] = []
+  function flattenFiles(files: VirtualFile[], prefix = ''): { path: string; content: string; encoding?: 'utf8' | 'base64' }[] {
+    const result: { path: string; content: string; encoding?: 'utf8' | 'base64' }[] = []
     for (const f of files) {
       const path = prefix ? `${prefix}/${f.name}` : f.name
       if (f.type === 'file') {
-        result.push({ path, content: f.content })
+        result.push({ path, content: f.content, encoding: f.encoding ?? 'utf8' })
       }
       if (f.children) {
         result.push(...flattenFiles(f.children, path))
@@ -136,6 +155,7 @@ export const useProjectStore = defineStore('project', () => {
     filteredProjects,
     loadFromStorage,
     createProject,
+    createProjectFromFiles,
     getProject,
     deleteProjectById,
     updateProject,
